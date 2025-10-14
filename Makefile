@@ -8,10 +8,10 @@ TARGET = pe_calculadora
 
 # Directories
 OUTPUT_DIR = output
-SRC_DIR = .
+SRC_DIR = src
 
 # Source files
-SOURCES = main.c
+SOURCES = $(SRC_DIR)/main.c
 OBJECTS = $(SOURCES:.c=.o)
 
 # Default target

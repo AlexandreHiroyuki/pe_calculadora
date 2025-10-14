@@ -56,3 +56,10 @@ dkms.conf
 
 # Output directory
 output/
+
+# Visual Studio project configurations
+.vscode/*
+/.vs
+
+!.vscode/settings.json
+!.vscode/extensions.json
