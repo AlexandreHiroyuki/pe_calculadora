@@ -3,7 +3,7 @@
 
 # Compiler settings
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99
+CFLAGS = -Wall -Wextra -std=c99 -I$(SRC_DIR)
 TARGET = pe_calculadora
 
 # Directories
@@ -11,7 +11,7 @@ OUTPUT_DIR = output
 SRC_DIR = src
 
 # Source files
-SOURCES = $(SRC_DIR)/main.c
+SOURCES = $(SRC_DIR)/main.c $(SRC_DIR)/BigInt/BigInt.c
 OBJECTS = $(SOURCES:.c=.o)
 
 # Default target

@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include "BigInt/BigInt.h"
 
 int main(void) {
   // Setup
@@ -35,7 +37,33 @@ int main(void) {
       printf("Saindo...\n");
       exit = 1;
       break;
-    case 1: printf("Adição\n"); break;
+    case 1: {
+      printf("Adição\n");
+      printf("Digite o primeiro número: ");
+      char num1_str[1000];
+      scanf("%s", num1_str);
+      
+      printf("Digite o segundo número: ");
+      char num2_str[1000];
+      scanf("%s", num2_str);
+      
+      BigInt* num1 = bigint_create_from_string(num1_str);
+      BigInt* num2 = bigint_create_from_string(num2_str);
+      
+      if (num1 && num2) {
+        BigInt* result = bigint_add(num1, num2);
+        printf("Resultado: ");
+        bigint_print(result);
+        printf("\n");
+        
+        bigint_destroy(num1);
+        bigint_destroy(num2);
+        bigint_destroy(result);
+      } else {
+        printf("Erro ao criar BigInt\n");
+      }
+      break;
+    }
     case 2: printf("Subtração\n"); break;
     case 3: printf("Multiplicação\n"); break;
     case 4: printf("Divisão\n"); break;
