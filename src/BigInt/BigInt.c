@@ -261,7 +261,7 @@ int bigint_compare(const BigInt* a, const BigInt* b) {
 }
 
 // Soma dois BigInts e retorna o resultado
-BigInt* bigint_add(const BigInt* a, const BigInt* b) {
+BigInt* bigint_sum(const BigInt* a, const BigInt* b) {
   if (a == NULL || b == NULL) {
     return NULL;
   }

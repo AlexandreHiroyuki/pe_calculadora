@@ -27,7 +27,7 @@ void bigint_destroy(BigInt* bi);
 BigInt* bigint_copy(const BigInt* bi);
 
 // Soma dois BigInts e retorna o resultado
-BigInt* bigint_add(const BigInt* a, const BigInt* b);
+BigInt* bigint_sum(const BigInt* a, const BigInt* b);
 
 // Compara dois BigInts
 // Retorna: 1 se a > b, 0 se a == b, -1 se a < b
