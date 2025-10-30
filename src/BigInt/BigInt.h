@@ -2,13 +2,14 @@
 #define BIGINT_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 // Estrutura BigInt que armazena dígitos dinamicamente
 typedef struct {
-  char* digits;         // Array de dígitos (0-9) armazenados como caracteres
-  size_t length;        // Quantidade de dígitos
+  uint32_t* digits;     // Limbs base 2^32 (little-endian)
+  size_t length;        // Quantidade de limbs usados
   int sign;             // 1 para positivo, -1 para negativo
-  size_t capacity;      // Capacidade atual do array de dígitos
+  size_t capacity;      // Capacidade atual do array de limbs
 } BigInt;
 
 // Cria um BigInt a partir de uma string
@@ -27,7 +28,7 @@ void bigint_destroy(BigInt* bi);
 BigInt* bigint_copy(const BigInt* bi);
 
 // Soma dois BigInts e retorna o resultado
-BigInt* bigint_sum(const BigInt* a, const BigInt* b);
+BigInt* bigint_add(const BigInt* a, const BigInt* b);
 
 // Compara dois BigInts
 // Retorna: 1 se a > b, 0 se a == b, -1 se a < b
