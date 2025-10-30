@@ -5,18 +5,18 @@
 
 #define INITIAL_CAPACITY 10
 
-// Create a BigInt from a string
+// Cria um BigInt a partir de uma string
 BigInt* bigint_create_from_string(const char* str) {
   if (str == NULL) {
     return NULL;
   }
 
-  // Skip leading whitespace
+  // Ignora espaços em branco iniciais
   while (*str == ' ' || *str == '\t') {
     str++;
   }
 
-  // Check for sign
+  // Verifica o sinal
   int sign = 1;
   if (*str == '+') {
     sign = 1;
@@ -26,12 +26,12 @@ BigInt* bigint_create_from_string(const char* str) {
     str++;
   }
 
-  // Skip leading zeros
+  // Ignora zeros à esquerda
   while (*str == '0' && *(str + 1) != '\0') {
     str++;
   }
 
-  // Calculate length of digits
+  // Calcula o comprimento dos dígitos
   const char* start = str;
   while (*str >= '0' && *str <= '9') {
     str++;
@@ -47,7 +47,7 @@ BigInt* bigint_create_from_string(const char* str) {
     return NULL;
   }
 
-  // Allocate memory
+  // Aloca memória
   BigInt* bi = malloc(sizeof(BigInt));
   if (bi == NULL) {
     return NULL;
@@ -63,12 +63,12 @@ BigInt* bigint_create_from_string(const char* str) {
   bi->length = len;
   bi->sign = (len == 1 && start[0] == '0') ? 1 : sign;
 
-  // Store digits in little-endian order (LSB first)
+  // Armazena os dígitos em ordem little-endian (LSB primeiro)
   for (size_t i = 0; i < len; i++) {
     bi->digits[i] = start[len - 1 - i] - '0';
   }
 
-  // Initialize remaining capacity
+  // Inicializa a capacidade restante
   for (size_t i = len; i < bi->capacity; i++) {
     bi->digits[i] = 0;
   }
@@ -76,7 +76,7 @@ BigInt* bigint_create_from_string(const char* str) {
   return bi;
 }
 
-// Create a BigInt from an integer
+// Cria um BigInt a partir de um inteiro
 BigInt* bigint_create_from_int(int num) {
   BigInt* bi = malloc(sizeof(BigInt));
   if (bi == NULL) {
@@ -103,7 +103,7 @@ BigInt* bigint_create_from_int(int num) {
   int sign = num >= 0 ? 1 : -1;
   num = (num < 0) ? -num : num;
 
-  // Count digits
+  // Conta os dígitos
   int temp = num;
   size_t len = 0;
   while (temp > 0) {
@@ -121,13 +121,13 @@ BigInt* bigint_create_from_int(int num) {
   bi->length = len;
   bi->sign = sign;
 
-  // Store digits in little-endian order
+  // Armazena os dígitos em ordem little-endian
   for (size_t i = 0; i < len; i++) {
     bi->digits[i] = num % 10;
     num /= 10;
   }
 
-  // Initialize remaining capacity
+  // Inicializa a capacidade restante
   for (size_t i = len; i < bi->capacity; i++) {
     bi->digits[i] = 0;
   }
@@ -135,7 +135,7 @@ BigInt* bigint_create_from_int(int num) {
   return bi;
 }
 
-// Create an empty BigInt with initial capacity
+// Cria um BigInt vazio com capacidade inicial
 BigInt* bigint_create_empty(size_t initial_capacity) {
   if (initial_capacity == 0) {
     initial_capacity = INITIAL_CAPACITY;
@@ -163,7 +163,7 @@ BigInt* bigint_create_empty(size_t initial_capacity) {
   return bi;
 }
 
-// Destroy a BigInt and free its memory
+// Destrói um BigInt e libera sua memória
 void bigint_destroy(BigInt* bi) {
   if (bi == NULL) {
     return;
@@ -175,7 +175,7 @@ void bigint_destroy(BigInt* bi) {
   free(bi);
 }
 
-// Create a copy of a BigInt
+// Cria uma cópia de um BigInt
 BigInt* bigint_copy(const BigInt* bi) {
   if (bi == NULL) {
     return NULL;
@@ -203,7 +203,7 @@ BigInt* bigint_copy(const BigInt* bi) {
   return copy;
 }
 
-// Resize the capacity of a BigInt
+// Redimensiona a capacidade de um BigInt
 void bigint_resize(BigInt* bi, size_t new_capacity) {
   if (bi == NULL || new_capacity < bi->length) {
     return;
@@ -216,7 +216,7 @@ void bigint_resize(BigInt* bi, size_t new_capacity) {
 
   bi->digits = new_digits;
 
-  // Initialize new capacity to zero
+  // Inicializa a nova capacidade com zero
   for (size_t i = bi->capacity; i < new_capacity; i++) {
     bi->digits[i] = 0;
   }
@@ -224,14 +224,14 @@ void bigint_resize(BigInt* bi, size_t new_capacity) {
   bi->capacity = new_capacity;
 }
 
-// Compare two BigInts
-// Returns: 1 if a > b, 0 if a == b, -1 if a < b
+// Compara dois BigInts
+// Retorna: 1 se a > b, 0 se a == b, -1 se a < b
 int bigint_compare(const BigInt* a, const BigInt* b) {
   if (a == NULL || b == NULL) {
     return 0;
   }
 
-  // Compare signs
+  // Compara os sinais
   if (a->sign > b->sign) {
     return 1;
   }
@@ -239,7 +239,7 @@ int bigint_compare(const BigInt* a, const BigInt* b) {
     return -1;
   }
 
-  // Signs are equal, compare lengths
+  // Sinais são iguais, compara os comprimentos
   if (a->length > b->length) {
     return a->sign;
   }
@@ -247,7 +247,7 @@ int bigint_compare(const BigInt* a, const BigInt* b) {
     return -a->sign;
   }
 
-  // Same length, compare digits from MSB to LSB
+  // Mesmo comprimento, compara dígitos do MSB para o LSB
   for (int i = a->length - 1; i >= 0; i--) {
     if (a->digits[i] > b->digits[i]) {
       return a->sign;
@@ -260,22 +260,22 @@ int bigint_compare(const BigInt* a, const BigInt* b) {
   return 0;
 }
 
-// Add two BigInts and return the result
+// Soma dois BigInts e retorna o resultado
 BigInt* bigint_add(const BigInt* a, const BigInt* b) {
   if (a == NULL || b == NULL) {
     return NULL;
   }
 
-  // Handle different signs
+  // Trata sinais diferentes
   if (a->sign != b->sign) {
-    // This would require subtraction logic
-    // For now, assume both are positive
-    // TODO: Implement proper signed addition
+    // Isso exigiria lógica de subtração
+    // Por enquanto, assuma que ambos são positivos
+    // TODO: Implementar soma com sinal corretamente
   }
 
-  // Ensure we have enough capacity
+  // Garante capacidade suficiente
   size_t max_len = (a->length > b->length) ? a->length : b->length;
-  size_t result_capacity = max_len + 10;  // Extra space for carry
+  size_t result_capacity = max_len + 10;  // Espaço extra para o vai-um
 
   BigInt* result = bigint_create_empty(result_capacity);
   if (result == NULL) {
@@ -284,7 +284,7 @@ BigInt* bigint_add(const BigInt* a, const BigInt* b) {
 
   result->sign = a->sign;
 
-  // Add digits
+  // Soma os dígitos
   int carry = 0;
   size_t i = 0;
 
@@ -305,7 +305,7 @@ BigInt* bigint_add(const BigInt* a, const BigInt* b) {
 
   result->length = i;
 
-  // Remove leading zeros
+  // Remove zeros à esquerda
   while (result->length > 1 && result->digits[result->length - 1] == 0) {
     result->length--;
   }
@@ -313,13 +313,13 @@ BigInt* bigint_add(const BigInt* a, const BigInt* b) {
   return result;
 }
 
-// Convert BigInt to string (caller must free the result)
+// Converte BigInt para string (quem chamar deve liberar o resultado)
 char* bigint_to_string(const BigInt* bi) {
   if (bi == NULL) {
     return NULL;
   }
 
-  // Allocate space for sign and digits plus null terminator
+  // Aloca espaço para o sinal e dígitos, mais o terminador nulo
   char* str = malloc((bi->length + 2) * sizeof(char));
   if (str == NULL) {
     return NULL;
@@ -327,12 +327,12 @@ char* bigint_to_string(const BigInt* bi) {
 
   int index = 0;
 
-  // Add sign if negative
+  // Adiciona o sinal se for negativo
   if (bi->sign == -1) {
     str[index++] = '-';
   }
 
-  // Copy digits in reverse order (MSB to LSB)
+  // Copia os dígitos em ordem reversa (MSB para LSB)
   for (int i = bi->length - 1; i >= 0; i--) {
     str[index++] = bi->digits[i] + '0';
   }
@@ -342,7 +342,7 @@ char* bigint_to_string(const BigInt* bi) {
   return str;
 }
 
-// Convert BigInt to string and print it
+// Converte BigInt para string e imprime
 void bigint_print(const BigInt* bi) {
   char* str = bigint_to_string(bi);
   if (str != NULL) {
