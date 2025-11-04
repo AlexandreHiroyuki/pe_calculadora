@@ -1,7 +1,24 @@
 #include "BigInt.h"
+#include <ctype.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+// Divide uma string decimal por um divisor e retorna o resto
+// Modifica a string in-place com o quociente
+static uint32_t divide_decimal_string_by_uint32(char *str, size_t len,
+                                                uint64_t divisor) {
+  uint64_t remainder = 0;
+
+  for(size_t i = 0; i < len; i++) {
+    remainder = remainder * 10 + (str[i] - '0');
+    str[i]    = (char)(remainder / divisor) + '0';
+    remainder %= divisor;
+  }
+
+  return (uint32_t)remainder;
+}
 
 // Cria um BigInt a partir de uma string
 BigInt *bigint_create_from_string(const char *str) {
@@ -30,15 +47,15 @@ BigInt *bigint_create_from_string(const char *str) {
   }
 
   // Calcula o comprimento dos dígitos
-  const char *start = str;
+  const char *digits_start = str;
   while(*str >= '0' && *str <= '9') {
     str++;
   }
-  size_t len = str - start;
+  size_t len = str - digits_start;
 
-  if(len == 0 && *start == '0') {
+  if(len == 0 && *digits_start == '0') {
     len = 1;
-    str = start;
+    str = digits_start;
   }
 
   if(len == 0) {
@@ -57,11 +74,58 @@ BigInt *bigint_create_from_string(const char *str) {
     return NULL;
   }
 
-  bi->sign = (len == 1 && start[0] == '0') ? 1 : sign;
+  bi->sign = (len == 1 && digits_start[0] == '0') ? 1 : sign;
 
-  // Armazena os dígitos em ordem little-endian (LSB primeiro)
-  for(size_t i = 0; i < len; i++) {
-    linkedlist_append(bi->digits, start[len - 1 - i] - '0');
+  // Se for zero, apenas adiciona um zero
+  if(len == 1 && digits_start[0] == '0') {
+    linkedlist_append(bi->digits, 0);
+    return bi;
+  }
+
+  // Converte string decimal para base 2^32
+  // Fazemos divisões sucessivas por 2^32 até que o número seja zero
+  char *working_str = malloc(len + 1);
+  if(working_str == NULL) {
+    linkedlist_destroy(bi->digits);
+    free(bi);
+    return NULL;
+  }
+
+  memcpy(working_str, digits_start, len);
+  working_str[len] = '\0';
+
+  size_t working_len = len;
+
+  while(working_len > 0 && !(working_len == 1 && working_str[0] == '0')) {
+    uint64_t divisor = ((uint64_t)UINT32_MAX) + 1ULL; // 2^32
+    uint32_t remainder =
+        divide_decimal_string_by_uint32(working_str, working_len, divisor);
+    linkedlist_append(bi->digits, remainder);
+
+    // Atualiza o comprimento (remove zeros à esquerda)
+    size_t new_len = 0;
+    while(new_len < working_len && working_str[new_len] == '0') {
+      new_len++;
+    }
+    if(new_len == working_len) {
+      break; // Todas as posições são zero
+    }
+    working_len -= new_len;
+    memmove(working_str, working_str + new_len, working_len);
+    working_str[working_len] = '\0';
+
+    // Se depois de remover zeros restou apenas um dígito e é zero, paramos
+    if(working_len == 1 && working_str[0] == '0') {
+      break;
+    }
+  }
+
+  free(working_str);
+
+  // Se não adicionamos nenhum dígito, adiciona zero
+  if(linkedlist_length(bi->digits) == 0) {
+    linkedlist_append(bi->digits, 0);
+    bi->sign = 1;
   }
 
   return bi;
@@ -86,16 +150,14 @@ BigInt *bigint_create_from_int(int num) {
     return bi;
   }
 
-  int sign = num >= 0 ? 1 : -1;
-  num      = (num < 0) ? -num : num;
+  int      sign    = num >= 0 ? 1 : -1;
+  uint32_t abs_num = (num < 0) ? (uint32_t)(-(int64_t)num) : (uint32_t)num;
 
   bi->sign = sign;
 
-  // Armazena os dígitos em ordem little-endian
-  while(num > 0) {
-    linkedlist_append(bi->digits, num % 10);
-    num /= 10;
-  }
+  // Armazena os valores em ordem little-endian (LSB primeiro)
+  // Para números pequenos, apenas um uint32_t é necessário
+  linkedlist_append(bi->digits, abs_num);
 
   return bi;
 }
@@ -185,15 +247,15 @@ int bigint_compare(const BigInt *a, const BigInt *b) {
     return -a->sign;
   }
 
-  // Mesmo comprimento, compara dígitos do MSB para o LSB
+  // Mesmo comprimento, compara valores do MSB para o LSB
   for(int i = (int)a_len - 1; i >= 0; i--) {
-    char a_digit = linkedlist_get(a->digits, i);
-    char b_digit = linkedlist_get(b->digits, i);
+    uint32_t a_val = linkedlist_get(a->digits, i);
+    uint32_t b_val = linkedlist_get(b->digits, i);
 
-    if(a_digit > b_digit) {
+    if(a_val > b_val) {
       return a->sign;
     }
-    if(a_digit < b_digit) {
+    if(a_val < b_val) {
       return -a->sign;
     }
   }
@@ -226,22 +288,22 @@ BigInt *bigint_sum(const BigInt *a, const BigInt *b) {
 
   result->sign = a->sign;
 
-  // Soma os dígitos
-  int    carry = 0;
-  size_t i     = 0;
+  // Soma os valores em base 2^32
+  uint64_t carry = 0;
+  size_t   i     = 0;
 
   while(i < max_len || carry > 0) {
-    int sum = carry;
+    uint64_t sum = carry;
 
     if(i < a_len) {
-      sum += linkedlist_get(a->digits, i);
+      sum += (uint64_t)linkedlist_get(a->digits, i);
     }
     if(i < b_len) {
-      sum += linkedlist_get(b->digits, i);
+      sum += (uint64_t)linkedlist_get(b->digits, i);
     }
 
-    linkedlist_append(result->digits, sum % 10);
-    carry = sum / 10;
+    linkedlist_append(result->digits, (uint32_t)(sum & UINT32_MAX));
+    carry = sum >> 32;
     i++;
   }
 
@@ -249,6 +311,31 @@ BigInt *bigint_sum(const BigInt *a, const BigInt *b) {
   linkedlist_remove_leading_zeros(result->digits);
 
   return result;
+}
+
+// Multiplica um array decimal por um multiplicador e adiciona um valor
+// Retorna o novo comprimento do array
+static size_t multiply_decimal_array_by_uint32_and_add(char *arr, size_t len,
+                                                       uint64_t multiplier,
+                                                       uint64_t add_value) {
+  uint64_t carry = add_value;
+
+  for(size_t i = 0; i < len; i++) {
+    carry += (arr[i] - '0') * multiplier;
+    arr[i] = (char)(carry % 10) + '0';
+    carry /= 10;
+  }
+
+  // Adiciona novos dígitos se houver carry
+  while(carry > 0) {
+    if(len >= 10000) { // Limite de segurança
+      break;
+    }
+    arr[len++] = (char)(carry % 10) + '0';
+    carry /= 10;
+  }
+
+  return len;
 }
 
 // Converte BigInt para string (quem chamar deve liberar o resultado)
@@ -259,9 +346,45 @@ char *bigint_to_string(const BigInt *bi) {
 
   size_t len = linkedlist_length(bi->digits);
 
-  // Aloca espaço para o sinal e dígitos, mais o terminador nulo
-  char *str = malloc((len + 2) * sizeof(char));
+  if(len == 0) {
+    char *str = malloc(2);
+    if(str == NULL) {
+      return NULL;
+    }
+    str[0] = '0';
+    str[1] = '\0';
+    return str;
+  }
+
+  // Aloca um buffer temporário para construir a string decimal
+  // Estimativa: cada uint32_t pode representar até ~10 dígitos decimais
+  // Usamos um buffer grande para evitar realocações
+  char *decimal_buffer = malloc(10000);
+  if(decimal_buffer == NULL) {
+    return NULL;
+  }
+
+  decimal_buffer[0]  = '0';
+  size_t decimal_len = 1;
+
+  // Converte de base 2^32 para decimal
+  // Começamos do MSB (mais significativo) para o LSB (menos significativo)
+  uint64_t base = ((uint64_t)UINT32_MAX) + 1ULL; // 2^32
+
+  for(int i = (int)len - 1; i >= 0; i--) {
+    uint32_t value = linkedlist_get(bi->digits, i);
+
+    // Multiplica o resultado atual por 2^32 e adiciona o próximo valor
+    decimal_len = multiply_decimal_array_by_uint32_and_add(
+        decimal_buffer, decimal_len, base, value);
+  }
+
+  // Calcula o tamanho necessário para a string final (incluindo sinal e
+  // terminador)
+  size_t str_len = decimal_len + (bi->sign == -1 ? 1 : 0) + 1;
+  char  *str     = malloc(str_len);
   if(str == NULL) {
+    free(decimal_buffer);
     return NULL;
   }
 
@@ -273,12 +396,13 @@ char *bigint_to_string(const BigInt *bi) {
   }
 
   // Copia os dígitos em ordem reversa (MSB para LSB)
-  for(int i = (int)len - 1; i >= 0; i--) {
-    str[index++] = linkedlist_get(bi->digits, i) + '0';
+  for(int i = (int)decimal_len - 1; i >= 0; i--) {
+    str[index++] = decimal_buffer[i];
   }
 
   str[index] = '\0';
 
+  free(decimal_buffer);
   return str;
 }
 

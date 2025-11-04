@@ -2,10 +2,11 @@
 #define LINKEDLIST_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 // Estrutura do nó da lista encadeada
 typedef struct ListNode {
-  char digit;              // Dígito armazenado (0-9)
+  uint32_t value;          // Valor armazenado (base 2^32)
   struct ListNode* next;   // Ponteiro para o próximo nó
 } ListNode;
 
@@ -22,17 +23,17 @@ LinkedList* linkedlist_create(void);
 // Destrói uma lista encadeada e libera sua memória
 void linkedlist_destroy(LinkedList* list);
 
-// Adiciona um dígito no final da lista
-void linkedlist_append(LinkedList* list, char digit);
+// Adiciona um valor no final da lista
+void linkedlist_append(LinkedList* list, uint32_t value);
 
-// Adiciona um dígito no início da lista
-void linkedlist_prepend(LinkedList* list, char digit);
+// Adiciona um valor no início da lista
+void linkedlist_prepend(LinkedList* list, uint32_t value);
 
-// Obtém o dígito no índice especificado (0 é o primeiro elemento)
-char linkedlist_get(LinkedList* list, size_t index);
+// Obtém o valor no índice especificado (0 é o primeiro elemento)
+uint32_t linkedlist_get(LinkedList* list, size_t index);
 
-// Define o dígito no índice especificado
-void linkedlist_set(LinkedList* list, size_t index, char digit);
+// Define o valor no índice especificado
+void linkedlist_set(LinkedList* list, size_t index, uint32_t value);
 
 // Retorna o comprimento da lista
 size_t linkedlist_length(LinkedList* list);

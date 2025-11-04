@@ -1,4 +1,5 @@
 #include "LinkedList.h"
+#include <stdint.h>
 #include <stdlib.h>
 
 // Cria uma nova lista encadeada vazia
@@ -31,8 +32,8 @@ void linkedlist_destroy(LinkedList *list) {
   free(list);
 }
 
-// Adiciona um dígito no final da lista
-void linkedlist_append(LinkedList *list, char digit) {
+// Adiciona um valor no final da lista
+void linkedlist_append(LinkedList *list, uint32_t value) {
   if(list == NULL) {
     return;
   }
@@ -42,7 +43,7 @@ void linkedlist_append(LinkedList *list, char digit) {
     return;
   }
 
-  new_node->digit = digit;
+  new_node->value = value;
   new_node->next  = NULL;
 
   if(list->head == NULL) {
@@ -58,8 +59,8 @@ void linkedlist_append(LinkedList *list, char digit) {
   list->length++;
 }
 
-// Adiciona um dígito no início da lista
-void linkedlist_prepend(LinkedList *list, char digit) {
+// Adiciona um valor no início da lista
+void linkedlist_prepend(LinkedList *list, uint32_t value) {
   if(list == NULL) {
     return;
   }
@@ -69,7 +70,7 @@ void linkedlist_prepend(LinkedList *list, char digit) {
     return;
   }
 
-  new_node->digit = digit;
+  new_node->value = value;
   new_node->next  = list->head;
 
   if(list->head == NULL) {
@@ -81,8 +82,8 @@ void linkedlist_prepend(LinkedList *list, char digit) {
   list->length++;
 }
 
-// Obtém o dígito no índice especificado (0 é o primeiro elemento)
-char linkedlist_get(LinkedList *list, size_t index) {
+// Obtém o valor no índice especificado (0 é o primeiro elemento)
+uint32_t linkedlist_get(LinkedList *list, size_t index) {
   if(list == NULL || index >= list->length) {
     return 0;
   }
@@ -92,11 +93,11 @@ char linkedlist_get(LinkedList *list, size_t index) {
     current = current->next;
   }
 
-  return current->digit;
+  return current->value;
 }
 
-// Define o dígito no índice especificado
-void linkedlist_set(LinkedList *list, size_t index, char digit) {
+// Define o valor no índice especificado
+void linkedlist_set(LinkedList *list, size_t index, uint32_t value) {
   if(list == NULL || index >= list->length) {
     return;
   }
@@ -106,7 +107,7 @@ void linkedlist_set(LinkedList *list, size_t index, char digit) {
     current = current->next;
   }
 
-  current->digit = digit;
+  current->value = value;
 }
 
 // Retorna o comprimento da lista
@@ -130,7 +131,7 @@ LinkedList *linkedlist_copy(LinkedList *list) {
 
   ListNode *current = list->head;
   while(current != NULL) {
-    linkedlist_append(copy, current->digit);
+    linkedlist_append(copy, current->value);
     current = current->next;
   }
 
@@ -163,7 +164,7 @@ void linkedlist_remove_leading_zeros(LinkedList *list) {
 
   // Remove zeros do final (que são zeros à esquerda na representação)
   // Mas mantém pelo menos um zero se a lista só tiver zeros
-  while(list->length > 1 && list->tail != NULL && list->tail->digit == 0) {
+  while(list->length > 1 && list->tail != NULL && list->tail->value == 0) {
     // Encontra o penúltimo nó
     if(list->head == list->tail) {
       // Só tem um elemento

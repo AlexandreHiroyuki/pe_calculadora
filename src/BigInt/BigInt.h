@@ -2,11 +2,13 @@
 #define BIGINT_H
 
 #include <stddef.h>
+#include <stdint.h>
 #include "../LinkedList/LinkedList.h"
 
 // Estrutura BigInt que armazena dígitos dinamicamente usando LinkedList
+// Cada nó armazena um valor de 32 bits (base 2^32)
 typedef struct {
-  LinkedList* digits;   // Lista encadeada de dígitos (0-9) armazenados como caracteres
+  LinkedList* digits;   // Lista encadeada de valores (base 2^32) armazenados como uint32_t
   int sign;             // 1 para positivo, -1 para negativo
 } BigInt;
 
