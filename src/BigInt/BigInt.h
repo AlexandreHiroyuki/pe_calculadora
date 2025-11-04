@@ -2,13 +2,12 @@
 #define BIGINT_H
 
 #include <stddef.h>
+#include "../LinkedList/LinkedList.h"
 
-// Estrutura BigInt que armazena dígitos dinamicamente
+// Estrutura BigInt que armazena dígitos dinamicamente usando LinkedList
 typedef struct {
-  char* digits;         // Array de dígitos (0-9) armazenados como caracteres
-  size_t length;        // Quantidade de dígitos
+  LinkedList* digits;   // Lista encadeada de dígitos (0-9) armazenados como caracteres
   int sign;             // 1 para positivo, -1 para negativo
-  size_t capacity;      // Capacidade atual do array de dígitos
 } BigInt;
 
 // Cria um BigInt a partir de uma string
@@ -38,9 +37,6 @@ char* bigint_to_string(const BigInt* bi);
 
 // Converte BigInt para string e imprime
 void bigint_print(const BigInt* bi);
-
-// Redimensiona a capacidade de um BigInt
-void bigint_resize(BigInt* bi, size_t new_capacity);
 
 #endif // BIGINT_H
 

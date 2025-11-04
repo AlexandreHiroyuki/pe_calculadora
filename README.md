@@ -12,3 +12,9 @@ make
 ```bash
 ./output/pe_calculadora
 ```
+
+## Como testar
+
+```bash
+make test
+```
