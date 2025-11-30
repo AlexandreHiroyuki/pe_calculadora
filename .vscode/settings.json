@@ -8,5 +8,6 @@
   "C_Cpp.formatting": "clangFormat",
   "[cpp]": {
     "editor.defaultFormatter": "ms-vscode.cpptools"
-  }
+  },
+  "makefile.configureOnOpen": false
 }

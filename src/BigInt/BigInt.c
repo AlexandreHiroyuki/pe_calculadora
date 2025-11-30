@@ -263,6 +263,25 @@ int bigint_compare(const BigInt *a, const BigInt *b) {
   return 0;
 }
 
+// Compara |a| e |b| (apenas magnitude).
+// Retorna: 1 se |a| > |b|, 0 se iguais, -1 se |a| < |b|
+static int bigint_compare_abs(const BigInt *a, const BigInt *b) {
+  size_t a_len = linkedlist_length(a->digits);
+  size_t b_len = linkedlist_length(b->digits);
+
+  if(a_len > b_len) return 1;
+  if(a_len < b_len) return -1;
+
+  // mesma quantidade de blocos: comparar do MSB -> LSB
+  for(long i = (long)a_len - 1; i >= 0; --i) {
+    uint32_t av = linkedlist_get(a->digits, (size_t)i);
+    uint32_t bv = linkedlist_get(b->digits, (size_t)i);
+    if(av > bv) return 1;
+    if(av < bv) return -1;
+  }
+  return 0;
+}
+
 // Soma dois BigInts e retorna o resultado
 BigInt *bigint_sum(const BigInt *a, const BigInt *b) {
   if(a == NULL || b == NULL) {
@@ -270,11 +289,13 @@ BigInt *bigint_sum(const BigInt *a, const BigInt *b) {
   }
 
   // Trata sinais diferentes
+  // Trata sinais e delega para soma/subtração conforme necessário
   if(a->sign != b->sign) {
-    // Isso exigiria lógica de subtração
-    // Por enquanto, assuma que ambos são positivos
-    // TODO: Implementar soma com sinal corretamente
+    BigInt tmp = *b;
+    tmp.sign   = -tmp.sign;
+    return bigint_subtract(a, &tmp);
   }
+
 
   // Obtém os comprimentos
   size_t a_len   = linkedlist_length(a->digits);
@@ -312,6 +333,72 @@ BigInt *bigint_sum(const BigInt *a, const BigInt *b) {
 
   return result;
 }
+
+// Subtrai b de a (a - b) e retorna um novo BigInt
+BigInt *bigint_subtract(const BigInt *a, const BigInt *b) {
+  if(a == NULL || b == NULL) return NULL;
+
+  // casos de sinais
+  if(a->sign != b->sign) {
+    // a - (-b) = a + b
+    BigInt tmp = *b;
+    tmp.sign   = -tmp.sign; // inverte o sinal de b
+    return bigint_sum(a, &tmp);
+  }
+
+  // sinais iguais: resultado tem sinal do maior em | |; subtraímos magnitudes
+  int cmp = bigint_compare_abs(a, b);
+  if(cmp == 0) {
+    // zero
+    BigInt *r = bigint_create_empty(0);
+    if(!r) return NULL;
+    linkedlist_append(r->digits, 0);
+    r->sign = 1;
+    return r;
+  }
+
+  const BigInt *maj = (cmp >= 0) ? a : b; // maior magnitude
+  const BigInt *min = (cmp >= 0) ? b : a; // menor magnitude
+
+  BigInt *res = bigint_create_empty(0);
+  if(!res) return NULL;
+
+  // se |a| >= |b| sinal = a->sign; caso contrário sinal = -a->sign
+  res->sign = (cmp >= 0) ? a->sign : -a->sign;
+
+  uint64_t borrow  = 0;
+  size_t   max_len = linkedlist_length(maj->digits);
+  size_t   min_len = linkedlist_length(min->digits);
+
+  for(size_t i = 0; i < max_len; ++i) {
+    uint64_t av = linkedlist_get(maj->digits, i);
+    uint64_t bv = (i < min_len) ? linkedlist_get(min->digits, i) : 0ULL;
+
+    uint64_t subtrahend = bv + borrow;
+    uint64_t out;
+    if(av >= subtrahend) {
+      out    = av - subtrahend;
+      borrow = 0;
+    } else {
+      // empresta 1 bloco de 2^32
+      out    = ((1ULL << 32) + av) - subtrahend;
+      borrow = 1;
+    }
+    linkedlist_append(res->digits, (uint32_t)(out & 0xFFFFFFFFu));
+  }
+
+  // remove zeros à esquerda (no fim da lista, pois está em LSB-first)
+  linkedlist_remove_leading_zeros(res->digits);
+
+  // se virou zero absoluto, normaliza
+  if(linkedlist_length(res->digits) == 0) {
+    linkedlist_append(res->digits, 0);
+    res->sign = 1;
+  }
+
+  return res;
+}
+
 
 // Multiplica um array decimal por um multiplicador e adiciona um valor
 // Retorna o novo comprimento do array

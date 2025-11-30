@@ -1,78 +1,113 @@
 #include "BigInt/BigInt.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-int main(void) {
-  // Setup
-  int isFile      = 0;
-  int setupOption = 0;
-
-  printf("0. Teclado\n");
-  printf("1. Arquivo\n");
-  printf("Digite a opção: ");
-  scanf("%d", &setupOption);
-
-  if(setupOption == 0) { // Teclado
-    isFile = 0;
+int ler_numeros(int isFile, const char *input_filename, char *num1_str,
+                size_t num1_size, char *num2_str, size_t num2_size) {
+  if(isFile) {
+    FILE *fin = fopen(input_filename, "r");
+    if(fin == NULL) {
+      perror("Erro ao abrir arquivo de entrada");
+      return 0;
+    }
+    if(fscanf(fin, "%s %s", num1_str, num2_str) != 2) {
+      printf("Erro: arquivo deve conter dois números.\n");
+      fclose(fin);
+      return 0;
+    }
+    fclose(fin);
   } else {
-    isFile = 1;
+    printf("Digite o primeiro número: ");
+    scanf("%s", num1_str);
+    printf("Digite o segundo número: ");
+    scanf("%s", num2_str);
+  }
+  return 1;
+}
+
+void escrever_resultado(int isFile, const char *output_filename,
+                        const BigInt *resultado) {
+  if(isFile) {
+    FILE *fout = fopen(output_filename, "w");
+    if(fout == NULL) {
+      perror("Erro ao abrir arquivo de saída");
+      return;
+    }
+    char *res_str = bigint_to_string(resultado);
+    if(res_str != NULL) {
+      fprintf(fout, "%s\n", res_str);
+      free(res_str);
+    }
+    fclose(fout);
+    printf("Resultado gravado em %s\n", output_filename);
+  } else {
+    printf("Resultado: ");
+    bigint_print(resultado);
+    printf("\n");
+  }
+}
+
+int main() {
+  int  opcao;
+  int  isFile = 0;
+  char input_filename[256];
+  char output_filename[256];
+
+  printf("Deseja ler os números de um arquivo? (1 = sim, 0 = não): ");
+  scanf("%d", &isFile);
+
+  if(isFile) {
+    printf("Nome do arquivo de entrada: ");
+    scanf("%255s", input_filename);
+    printf("Nome do arquivo de saída: ");
+    scanf("%255s", output_filename);
   }
 
-  // Super Loop
   while(1) {
-    int option = 0;
-    int exit   = 0;
-
-    printf("0. Sair\n");
-    printf("1. Adição\n");
+    printf("\n--- Calculadora BigInt ---\n");
+    printf("1. Soma\n");
     printf("2. Subtração\n");
-    printf("3. Multiplicação\n");
-    printf("4. Divisão\n");
-    printf("Digite a opção: ");
-    scanf("%d", &option);
+    printf("3. Sair\n");
+    printf("Escolha: ");
+    scanf("%d", &opcao);
 
-    // Jump table elimina o tempo de busca pela opção na lista O(1)
-    switch(option) {
-    case 0:
-      printf("Saindo...\n");
-      exit = 1;
-      break;
-    case 1: {
-      printf("Adição\n");
-      printf("Digite o primeiro número: ");
-      char num1_str[1000];
-      scanf("%s", num1_str);
+    if(opcao == 3) break;
 
-      printf("Digite o segundo número: ");
-      char num2_str[1000];
-      scanf("%s", num2_str);
-
-      BigInt *num1 = bigint_create_from_string(num1_str);
-      BigInt *num2 = bigint_create_from_string(num2_str);
-
-      if(num1 && num2) {
-        BigInt *result = bigint_sum(num1, num2);
-        printf("Resultado: ");
-        bigint_print(result);
-        printf("\n");
-
-        bigint_destroy(num1);
-        bigint_destroy(num2);
-        bigint_destroy(result);
-      } else {
-        printf("Erro ao criar BigInt\n");
-      }
-      break;
-    }
-    case 2: printf("Subtração\n"); break;
-    case 3: printf("Multiplicação\n"); break;
-    case 4: printf("Divisão\n"); break;
-    default: printf("Opção inválida\n"); break;
+    char num1_str[1024], num2_str[1024];
+    if(!ler_numeros(isFile, input_filename, num1_str, sizeof(num1_str),
+                    num2_str, sizeof(num2_str))) {
+      continue;
     }
 
-    if(exit) {
-      break;
+    BigInt *a = bigint_create_from_string(num1_str);
+    BigInt *b = bigint_create_from_string(num2_str);
+
+    if(!a || !b) {
+      printf("Erro ao criar BigInt.\n");
+      if(a) bigint_destroy(a);
+      if(b) bigint_destroy(b);
+      continue;
     }
+
+    BigInt *resultado = NULL;
+
+    if(opcao == 1) {
+      resultado = bigint_sum(a, b);
+    } else if(opcao == 2) {
+      resultado = bigint_subtract(a, b);
+    } else {
+      printf("Opção inválida.\n");
+    }
+
+    if(resultado) {
+      escrever_resultado(isFile, output_filename, resultado);
+      bigint_destroy(resultado);
+    }
+
+    bigint_destroy(a);
+    bigint_destroy(b);
   }
+
   return 0;
 }
