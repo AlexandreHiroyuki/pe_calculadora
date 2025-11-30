@@ -263,25 +263,6 @@ int bigint_compare(const BigInt *a, const BigInt *b) {
   return 0;
 }
 
-// Compara |a| e |b| (apenas magnitude).
-// Retorna: 1 se |a| > |b|, 0 se iguais, -1 se |a| < |b|
-static int bigint_compare_abs(const BigInt *a, const BigInt *b) {
-  size_t a_len = linkedlist_length(a->digits);
-  size_t b_len = linkedlist_length(b->digits);
-
-  if(a_len > b_len) return 1;
-  if(a_len < b_len) return -1;
-
-  // mesma quantidade de blocos: comparar do MSB -> LSB
-  for(long i = (long)a_len - 1; i >= 0; --i) {
-    uint32_t av = linkedlist_get(a->digits, (size_t)i);
-    uint32_t bv = linkedlist_get(b->digits, (size_t)i);
-    if(av > bv) return 1;
-    if(av < bv) return -1;
-  }
-  return 0;
-}
-
 // Soma dois BigInts e retorna o resultado
 BigInt *bigint_sum(const BigInt *a, const BigInt *b) {
   if(a == NULL || b == NULL) {
@@ -289,13 +270,21 @@ BigInt *bigint_sum(const BigInt *a, const BigInt *b) {
   }
 
   // Trata sinais diferentes
-  // Trata sinais e delega para soma/subtração conforme necessário
   if(a->sign != b->sign) {
-    BigInt tmp = *b;
-    tmp.sign   = -tmp.sign;
-    return bigint_subtract(a, &tmp);
+    // Quando os sinais são diferentes, a soma vira uma subtração:
+    // a + (-b) = a - |b|  ou  (-a) + b = b - |a|
+    if(a->sign == 1) {
+      // a é positivo, b é negativo: a + (-b) = a - |b|
+      BigInt tmp = *b;
+      tmp.sign = 1; // torna b positivo para subtrair
+      return bigint_subtract(a, &tmp);
+    } else {
+      // a é negativo, b é positivo: (-a) + b = b - |a|
+      BigInt tmp = *a;
+      tmp.sign = 1; // torna a positivo para subtrair
+      return bigint_subtract(b, &tmp);
+    }
   }
-
 
   // Obtém os comprimentos
   size_t a_len   = linkedlist_length(a->digits);
@@ -334,7 +323,184 @@ BigInt *bigint_sum(const BigInt *a, const BigInt *b) {
   return result;
 }
 
-// Subtrai b de a (a - b) e retorna um novo BigInt
+//funcao do Joao Vitor
+//Compara |a| e |b| (apenas magnitude).
+//Retorna: 1 se |a| > |b|, 0 se iguais, -1 se |a| < |b|
+static int bigint_compare_abs(const BigInt *a, const BigInt *b) {
+  size_t a_len = linkedlist_length(a->digits);
+  size_t b_len = linkedlist_length(b->digits);
+
+  if(a_len > b_len) return 1;
+  if(a_len < b_len) return -1;
+
+  // mesma quantidade de blocos: comparar do MSB -> LSB
+  for(long i = (long)a_len - 1; i >= 0; --i) {
+    uint32_t av = linkedlist_get(a->digits, (size_t)i);
+    uint32_t bv = linkedlist_get(b->digits, (size_t)i);
+    if(av > bv) return 1;
+    if(av < bv) return -1;
+  }
+  return 0;
+}
+
+BigInt *bigint_multiplicacao(const BigInt *a, const BigInt *b) {
+  if (a == NULL || b == NULL) {
+    return NULL;
+  }
+
+  size_t a_len = linkedlist_length(a->digits);
+  size_t b_len = linkedlist_length(b->digits);
+
+  //Se qualquer operando for zero o codigo retornará 0 com sinal positivo
+  if (a_len == 0 || (a_len == 1 && linkedlist_get(a->digits, 0) == 0) || b_len == 0 || (b_len == 1 && linkedlist_get(b->digits, 0) == 0)) {
+    BigInt *zero = bigint_create_from_int(0);
+    return zero;
+  }
+
+  //Cria BigInt resultado com zeros suficientes
+  BigInt *resultado = bigint_create_empty(0);
+  
+  if (resultado == NULL) {
+    return NULL;
+  }
+  
+  for (size_t h = 0; h < a_len + b_len; h++) {
+    linkedlist_append(resultado->digits, 0);
+  }
+
+  //Correção do sinal conforme a regra da multiplicacao
+  if (a->sign == b->sign) {
+    resultado->sign = +1;
+  } else {
+    resultado->sign = -1;
+  }
+
+  //Loop pra fazer a multiplicacao
+  for (size_t i = 0; i < a_len; i++) {
+    
+    uint64_t ai = (uint64_t) linkedlist_get(a->digits, i);
+    uint64_t carry = 0;
+
+    for (size_t j = 0; j < b_len || carry > 0; j++) {
+      uint64_t bj;
+      if (j < b_len) {
+        bj = (uint64_t) linkedlist_get(b->digits, j);
+      } else {
+        bj = 0;
+      }
+
+      uint64_t existing = linkedlist_get(resultado->digits, i + j);
+      uint64_t sum = ai * bj + existing + carry;
+      linkedlist_set(resultado->digits, i + j, (uint32_t)(sum & UINT32_MAX));
+
+      carry = sum >> 32;
+    }
+  }
+
+  linkedlist_remove_leading_zeros(resultado->digits);
+
+  //Se o resultado é zero entao o resultado deve ser positivo
+  if (linkedlist_length(resultado->digits) == 1 && linkedlist_get(resultado->digits, 0) == 0) {
+    resultado->sign = +1;
+  }
+
+  return resultado;
+}
+
+BigInt *bigint_divisao(const BigInt *a, const BigInt *b) {
+  if (!a || !b){
+    return NULL;
+  }
+
+  //Verifica se é divisão por zero
+  size_t b_len = linkedlist_length(b->digits);
+  if (b_len == 1 && linkedlist_get(b->digits, 0) == 0) {
+    //é divisão por zero
+    return NULL;
+  }
+
+  //Se a (dividendo) é 0 então o resultado é 0
+  size_t a_len = linkedlist_length(a->digits);
+  if (a_len == 1 && linkedlist_get(a->digits, 0) == 0) {
+    return bigint_create_from_int(0);
+  }
+
+  //Calcula o sinal do quociente
+  int result_sign;
+  if (a->sign == b->sign) {
+    result_sign = +1;
+  } else {
+    result_sign = -1;
+  }
+
+  //Faz o calculo somente com valores positivos
+  BigInt *dividendo = bigint_copy(a);
+  BigInt *divisor = bigint_copy(b);
+  dividendo->sign = 1;
+  divisor->sign = 1;
+
+  //Prepara o BigInt do quociente inicializando-o com zero
+  BigInt *quociente = bigint_create_from_int(0);
+  if (!quociente){
+    return NULL;
+  }
+
+  while (bigint_compare(dividendo, divisor) >= 0) {
+  
+    //acha maior potência de 2 * divisor <= dividendo
+    BigInt *temp = bigint_copy(divisor);
+    BigInt *mult = bigint_create_from_int(1);
+
+    while (1) {
+      //temp <<= 1
+      BigInt *temp2 = bigint_sum(temp, temp);
+
+      if (bigint_compare(temp2, dividendo) > 0) {
+        bigint_destroy(temp2);
+        break;
+      }
+
+      bigint_destroy(temp);
+      temp = temp2;
+
+      BigInt *mult2 = bigint_sum(mult, mult);
+      bigint_destroy(mult);
+      mult = mult2;
+    }
+
+    //Subtrai do dividendo
+    BigInt *novo_dividendo = bigint_subtract(dividendo, temp);
+    bigint_destroy(dividendo);
+    dividendo = novo_dividendo;
+
+    //adiciona ao quociente
+    BigInt *novo_quociente = bigint_sum(quociente, mult);
+    bigint_destroy(quociente);
+    quociente = novo_quociente;
+
+    bigint_destroy(temp);
+    bigint_destroy(mult);
+  }
+
+  //Aplica sinal final
+  quociente->sign = result_sign;
+
+  //remove zeros a esquerda
+  linkedlist_remove_leading_zeros(quociente->digits);
+
+  //Se zero, então o sinal é positivo
+  if (linkedlist_length(quociente->digits) == 1 && linkedlist_get(quociente->digits, 0) == 0) {
+    quociente->sign = +1;
+  }
+
+  bigint_destroy(dividendo);
+  bigint_destroy(divisor);
+
+  return quociente;
+}
+
+//funcao do Joao Vitor
+//  Subtrai b de a (a - b) e retorna um novo BigInt
 BigInt *bigint_subtract(const BigInt *a, const BigInt *b) {
   if(a == NULL || b == NULL) return NULL;
 
@@ -399,9 +565,64 @@ BigInt *bigint_subtract(const BigInt *a, const BigInt *b) {
   return res;
 }
 
+BigInt *bigint_mod(const BigInt *a, const BigInt *n) {
+  if (!a || !n) return NULL;
 
-// Multiplica um array decimal por um multiplicador e adiciona um valor
-// Retorna o novo comprimento do array
+  //Verifica se tem divisor zero
+  size_t n_len = linkedlist_length(n->digits);
+  if (n_len == 1 && linkedlist_get(n->digits, 0) == 0) {
+    //Erro: mod por zero
+    return NULL;
+  }
+
+  //Copia os valores
+  BigInt *dividendo = bigint_copy(a);
+  BigInt *divisor = bigint_copy(n);
+
+  dividendo->sign = 1;
+  divisor->sign = 1;
+
+  //q = a/n (quociente obtido pela divisão inteira descartando qualquer fração)
+  BigInt *q = bigint_divisao(dividendo, divisor);
+
+  bigint_destroy(dividendo);
+  bigint_destroy(divisor);
+
+  if (!q){
+    return NULL;
+  }
+  
+  //q*n
+  BigInt *multiplica_qn = bigint_multiplicacao(q, n);
+
+  if (!multiplica_qn) {
+      bigint_destroy(q);
+      return NULL;
+  }
+
+  //r = a - q*n
+  BigInt *resto = bigint_subtract(a, multiplica_qn);
+
+  bigint_destroy(q);
+  bigint_destroy(multiplica_qn);
+
+  if (!resto){
+    return NULL;
+  }
+  
+  //Ajusta o resto para ser 0 <= r<|n|
+  if (resto->sign == -1) {
+    // r = r + n
+    BigInt *aj = bigint_sum(resto, n);
+    bigint_destroy(resto);
+    resto = aj;
+  }
+
+  return resto;
+}
+
+//Multiplica um array decimal por um multiplicador e adiciona um valor
+//Retorna o novo comprimento do array
 static size_t multiply_decimal_array_by_uint32_and_add(char *arr, size_t len,
                                                        uint64_t multiplier,
                                                        uint64_t add_value) {
@@ -501,3 +722,4 @@ void bigint_print(const BigInt *bi) {
     free(str);
   }
 }
+

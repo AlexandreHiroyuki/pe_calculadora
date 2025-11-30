@@ -27,6 +27,8 @@ O menu foi implementado com `switch-case` (geralmente compilado como jump table 
 
 Este projeto usa uma representação interna do BigInt em base 2^32 ("limbs" de 32 bits) armazenada em uma lista ligada. Esta escolha arquitetural oferece vantagens significativas de performance tanto em tempo quanto em memória:
 
+**Nota sobre ordem de armazenamento:** Os dígitos são armazenados em ordem **little-endian** (LSB primeiro). O índice 0 contém o **dígito menos significativo** (LSB), e o último índice contém o **dígito mais significativo** (MSB). Esta ordem facilita operações aritméticas, pois começamos pelos dígitos menos significativos e propagamos o carry para a esquerda.
+
 ### Vantagens de Performance de Tempo
 
 1. **Aritmética nativa eficiente**: Cada limb armazena 32 bits (uint32_t), permitindo que operações aritméticas utilizem instruções nativas da CPU. A soma de dois limbs pode ser feita em 64 bits (uint64_t) para capturar o carry, resultando em menos instruções de máquina e melhor aproveitamento dos registradores.
