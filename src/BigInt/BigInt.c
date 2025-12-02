@@ -323,7 +323,6 @@ BigInt *bigint_sum(const BigInt *a, const BigInt *b) {
   return result;
 }
 
-//funcao do Joao Vitor
 //Compara |a| e |b| (apenas magnitude).
 //Retorna: 1 se |a| > |b|, 0 se iguais, -1 se |a| < |b|
 static int bigint_compare_abs(const BigInt *a, const BigInt *b) {
@@ -408,7 +407,7 @@ BigInt *bigint_multiplicacao(const BigInt *a, const BigInt *b) {
 }
 
 BigInt *bigint_divisao(const BigInt *a, const BigInt *b) {
-  if (!a || !b){
+  if (a == NULL || b == NULL){
     return NULL;
   }
 
@@ -441,7 +440,7 @@ BigInt *bigint_divisao(const BigInt *a, const BigInt *b) {
 
   //Prepara o BigInt do quociente inicializando-o com zero
   BigInt *quociente = bigint_create_from_int(0);
-  if (!quociente){
+  if (quociente == NULL){
     return NULL;
   }
 
@@ -499,7 +498,6 @@ BigInt *bigint_divisao(const BigInt *a, const BigInt *b) {
   return quociente;
 }
 
-// função do Joao Vitor
 //  Subtrai b de a (a - b) e retorna um novo BigInt
 BigInt *bigint_subtract(const BigInt *a, const BigInt *b) {
   if(a == NULL || b == NULL) return NULL;
@@ -566,7 +564,9 @@ BigInt *bigint_subtract(const BigInt *a, const BigInt *b) {
 }
 
 BigInt *bigint_mod(const BigInt *a, const BigInt *n) {
-  if (!a || !n) return NULL;
+  if (a == NULL || n == NULL){
+    return NULL;
+  }
 
   //Verifica se tem divisor zero
   size_t n_len = linkedlist_length(n->digits);
@@ -588,14 +588,14 @@ BigInt *bigint_mod(const BigInt *a, const BigInt *n) {
   bigint_destroy(dividendo);
   bigint_destroy(divisor);
 
-  if (!q){
+  if (q == NULL){
     return NULL;
   }
   
   //q*n
   BigInt *multiplica_qn = bigint_multiplicacao(q, n);
 
-  if (!multiplica_qn) {
+  if (multiplica_qn == NULL) {
       bigint_destroy(q);
       return NULL;
   }
@@ -606,7 +606,7 @@ BigInt *bigint_mod(const BigInt *a, const BigInt *n) {
   bigint_destroy(q);
   bigint_destroy(multiplica_qn);
 
-  if (!resto){
+  if (resto == NULL){
     return NULL;
   }
   
