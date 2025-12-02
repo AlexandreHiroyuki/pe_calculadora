@@ -499,7 +499,7 @@ BigInt *bigint_divisao(const BigInt *a, const BigInt *b) {
   return quociente;
 }
 
-//funcao do Joao Vitor
+// função do Joao Vitor
 //  Subtrai b de a (a - b) e retorna um novo BigInt
 BigInt *bigint_subtract(const BigInt *a, const BigInt *b) {
   if(a == NULL || b == NULL) return NULL;
