@@ -573,7 +573,7 @@ BigInt *bigint_subtract(const BigInt *a, const BigInt *b) {
 }
 
 BigInt *bigint_mod(const BigInt *a, const BigInt *n) {
-  if (a == NULL || n == NULL){
+  if (a == NULL || n == NULL) {
     return NULL;
   }
 
@@ -584,51 +584,89 @@ BigInt *bigint_mod(const BigInt *a, const BigInt *n) {
     return NULL;
   }
 
-  // Copia os valores
-  BigInt *dividendo = bigint_copy(a);
-  BigInt *divisor = bigint_copy(n);
-
-  dividendo->sign = 1;
-  divisor->sign = 1;
-
-  // q = a/n (quociente obtido pela divisão inteira descartando qualquer fração)
-  BigInt *q = bigint_divisao(dividendo, divisor);
-
-  bigint_destroy(dividendo);
-  bigint_destroy(divisor);
-
-  if (q == NULL){
-    return NULL;
+  // Se a (dividendo) é 0, o resultado é 0
+  if (bigint_is_zero(a)) {
+    return bigint_create_from_int(0);
   }
 
-  // q*n
-  BigInt *multiplica_qn = bigint_multiplicacao(q, n);
+  // Prepara as cópias para a divisão
+  // Copia os valores absolutos para calcular a divisão da magnitude |a|/|n|
+  BigInt *dividendo_abs = bigint_copy(a);
+  BigInt *divisor_abs = bigint_copy(n);
 
-  if (multiplica_qn == NULL) {
-      bigint_destroy(q);
+  if (dividendo_abs == NULL || divisor_abs == NULL) {
+      bigint_destroy(dividendo_abs);
+      bigint_destroy(divisor_abs);
       return NULL;
   }
 
-  // r = a - q*n
+  dividendo_abs->sign = 1; // |a|
+  divisor_abs->sign = 1;   // |n|
+
+  // Calcula q_abs = |a| / |n| (divisão inteira, que trunca para zero)
+  BigInt *q_abs = bigint_divisao(dividendo_abs, divisor_abs);
+
+  bigint_destroy(dividendo_abs);
+  bigint_destroy(divisor_abs);
+
+  if (q_abs == NULL) {
+    return NULL;
+  }
+
+  // Aplica o sinal para obter o quociente de truncamento q = a/n
+  BigInt *q = q_abs;
+  if (a->sign != n->sign && bigint_is_zero(q) == 0) {
+    q->sign = -1; // Se os sinais de 'a' e 'n' forem diferentes, o quociente é negativo
+  } else {
+    q->sign = 1; // Senão, é positivo ou zero
+  }
+
+  // Calcula q*n
+  BigInt *multiplica_qn = bigint_multiplicacao(q, n);
+
+  if (multiplica_qn == NULL) {
+    bigint_destroy(q);
+    return NULL;
+  }
+
+  // Calcula o resto r = a - q*n
   BigInt *resto = bigint_subtract(a, multiplica_qn);
 
   bigint_destroy(q);
   bigint_destroy(multiplica_qn);
 
-  if (resto == NULL){
+  if (resto == NULL) {
     return NULL;
   }
 
-  // Ajusta o resto para ser 0 <= r<|n|
-  if (resto->sign == -1) {
-    // r = r + n
-    BigInt *aj = bigint_sum(resto, n);
+  // Ajusta o resto para ser 0 <= r < |n|
+
+  // Cria |n| (magnitude do divisor)
+  BigInt *n_abs = bigint_copy(n);
+  if (n_abs == NULL) {
+      bigint_destroy(resto);
+      return NULL;
+  }
+  n_abs->sign = 1;
+
+  // Se r < 0, então r = r + |n|
+  if (resto->sign == -1 && bigint_is_zero(resto) == 0) {
+    // r = r + |n|
+    BigInt *aj = bigint_sum(resto, n_abs);
     bigint_destroy(resto);
     resto = aj;
   }
 
+  bigint_destroy(n_abs);
+
+  // Normaliza o zero se necessário
+  if (bigint_is_zero(resto)) {
+    resto->sign = 1;
+  }
+
   return resto;
 }
+
 
 // Multiplica um array decimal por um multiplicador e adiciona um valor
 // Retorna o novo comprimento do array
