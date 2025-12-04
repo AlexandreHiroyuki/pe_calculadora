@@ -34,13 +34,5 @@ clean:
 	rm -f $(OBJECTS)
 	rm -rf $(OUTPUT_DIR)
 
-# Run tests
-test: $(OUTPUT_DIR) $(OUTPUT_DIR)/test_bigint
-	./$(OUTPUT_DIR)/test_bigint
-
-# Compile test program
-$(OUTPUT_DIR)/test_bigint: src/test_bigint.c $(SRC_DIR)/BigInt/BigInt.c $(SRC_DIR)/LinkedList/LinkedList.c
-	$(CC) $(CFLAGS) -o $@ $^
-
 # Phony targets
 .PHONY: all clean test

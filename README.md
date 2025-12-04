@@ -13,12 +13,6 @@ make
 ./output/pe_calculadora
 ```
 
-## Como testar
-
-```bash
-make test
-```
-
 ## Menu: Switch Case / Jump Table
 
 O menu foi implementado com `switch-case` (geralmente compilado como jump table para casos densos) por apresentar complexidade de tempo O(1) por seleção e suporte nativo na linguagem, reduzindo overhead e riscos de erro. Alternativamente, uma hash table/`Map` permitiria seleção direta por `string` com custo amortizado O(1), melhorando a ergonomia de entrada. Entretanto, dado o número reduzido de opções e por não ser foco do projeto, priorizou-se a solução de menor custo de implementação e boa eficiência prática: `switch-case`.
